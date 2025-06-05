@@ -14,8 +14,20 @@ urdf_file_path = os.path.join(script_dir, "x1/urdf/x1.urdf")
 # absolute last link, you might need to specify `last_link_vector` or manually
 # construct the chain by listing links. For this example, we assume 'end_effector_link'
 # is the one we want and it's the last in sequence for this simple URDF.
+
+left_arm_link_names = [
+    "left_shoulder_pitch",
+    "left_shoulder_roll",
+    "left_shoulder_yaw",
+    "left_elbow_pitch",
+    "left_elbow_yaw",
+    "left_wrist_pitch"
+]
 try:
-    robot_chain = ikpy.chain.Chain.from_urdf_file(urdf_file_path)
+    robot_chain = ikpy.chain.Chain.from_urdf_file(urdf_file_path,
+    base_elements=[left_arm_link_names[0]], # The first link in your desired chain
+    last_link_vector=left_arm_link_names[-1], # The last link in your desired chain         
+    )                                         
 except FileNotFoundError:
     print(f"Error: URDF file not found at {urdf_file_path}")
     exit()
