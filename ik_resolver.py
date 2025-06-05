@@ -5,7 +5,7 @@ import os
 
 # Define the path to your URDF file
 script_dir = os.path.dirname(os.path.abspath(__file__))
-urdf_file_path = os.path.join(script_dir, "x1.urdf")
+urdf_file_path = os.path.join(script_dir, "x1/x1.urdf")
 
 # --- 1. Load the robot chain from the URDF file ---
 # IKPy will automatically determine the active links (non-fixed joints)
