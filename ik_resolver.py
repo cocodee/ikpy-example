@@ -17,6 +17,7 @@ urdf_file_path = os.path.join(script_dir, "x1/urdf/x1.urdf")
 
 left_arm_link_names = [
     "left_shoulder_pitch",
+    "left_shoulder_pitch_joint",
     "left_shoulder_roll",
     "left_shoulder_yaw",
     "left_elbow_pitch",
