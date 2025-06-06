@@ -25,7 +25,7 @@ left_arm_link_names = [
 ]
 try:
     robot_chain = ikpy.chain.Chain.from_urdf_file(urdf_file_path,
-    base_elements=[left_arm_link_names[0]], # The first link in your desired chain
+    base_elements=left_arm_link_names, # The first link in your desired chain
     last_link_element=left_arm_link_names[-1], # The last link in your desired chain         
     )                                         
 except FileNotFoundError:
