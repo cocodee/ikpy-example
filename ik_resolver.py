@@ -19,6 +19,7 @@ left_arm_link_names = [
     "left_shoulder_pitch",
     "left_shoulder_pitch_joint",
     "left_shoulder_roll",
+    "left_shoulder_roll_joint",
     "left_shoulder_yaw",
     "left_elbow_pitch",
     "left_elbow_yaw",
