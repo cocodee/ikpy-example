@@ -21,9 +21,13 @@ left_arm_link_names = [
     "left_shoulder_roll",
     "left_shoulder_roll_joint",
     "left_shoulder_yaw",
+    "left_shoulder_yaw_joint",
     "left_elbow_pitch",
+    "left_elbow_pitch_joint",
     "left_elbow_yaw",
-    "left_wrist_pitch"
+    "left_elbow_yaw_joint",
+    "left_wrist_pitch",
+    "left_wrist_pitch_joint"
 ]
 try:
     robot_chain = ikpy.chain.Chain.from_urdf_file(urdf_file_path,
