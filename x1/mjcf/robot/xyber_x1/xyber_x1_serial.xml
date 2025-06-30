@@ -117,8 +117,13 @@
                         <inertial pos="-9.994e-05 0 0.00229425" quat="0.5 0.5 0.5 0.5" mass="0.00900738" diaginertia="5.7e-07 3.8e-07 2.4e-07"/>
                         <geom type='mesh' mesh='left_wrist_pitch' pos='0 0 0' euler='-0 0 -0'
                           rgba="1 0.5 1 1" />
+                      <joint name="left_wrist_pitch" type='hinge' pos="0 0 0" axis="1 0 0"
+                       damping='1'
+                       range="-3.14 3.14" />
 
                         <body name="left_wrist_roll" pos="0 0 0" quat="0.707106 7.94894e-07 0.707108 7.94894e-07" gravcomp="0">
+                             <joint name="left_wrist_roll" type='hinge' pos="0 0 0" axis="1 0 0 " damping='1'
+                range="-3.14 3.14" />                        
                           <inertial pos="-0.0206623 -0.0314139 -0.00356965" quat="0.373433 0.844098 -0.329445 0.198775" mass="0.370899" diaginertia="0.000404077 0.000356841 0.000211598"/>
                           <geom type='mesh' mesh='left_wrist_roll' pos='0 0 0' euler='-0 0 -0'
                             rgba="1 0.4 0.4 1" />
@@ -159,8 +164,11 @@
                         <inertial pos="-9.994e-05 0 0.00229425" quat="0.5 0.5 0.5 0.5" mass="0.00900738" diaginertia="5.7e-07 3.8e-07 2.4e-07"/>
                         <geom type='mesh' mesh='right_wrist_pitch' pos='0 0 0' euler='-0 0 -0'
                           rgba="1 0.5 1 1" />
+                        <joint name="right_wrist_pitch" type='hinge' pos="0 0 0" axis="1 0 0" damping='1' range="-3.14 3.14" />
 
                         <body name="right_wrist_roll" pos="0 0 0" quat="0.707106 7.94894e-07 0.707108 7.94894e-07" gravcomp="0">
+                          <joint name="right_wrist_roll" type='hinge' pos="0 0 0" axis="1 0 0" damping='1'
+                range="-3.14 3.14" /> 
                           <inertial pos="-0.0206623 -0.0314139 -0.00356965" quat="0.373433 0.844098 -0.329445 0.198775" mass="0.370899" diaginertia="0.000404077 0.000356841 0.000211598"/>
                           <geom type='mesh' mesh='right_wrist_roll' pos='0 0 0' euler='-0 0 -0'
                             rgba="1 0.4 0.4 1" />
@@ -329,6 +337,9 @@
     <jointpos name = 'jointpos_left_knee_pitch' joint = 'left_knee_pitch' noise = "0" />
     <jointpos name = 'jointpos_left_ankle_pitch' joint = 'left_ankle_pitch' noise = "0" />
     <jointpos name = 'jointpos_left_ankle_roll' joint = 'left_ankle_roll' noise = "0" />
+    <jointpos name = 'jointpos_left_wrist_pitch' joint = 'left_wrist_pitch' noise = "0" />
+    <jointpos name = 'jointpos_left_wrist_roll' joint = 'left_wrist_roll' noise = "0" />
+
 
     <jointpos name = 'jointpos_right_hip_pitch' joint = 'right_hip_pitch' noise = "0" />
     <jointpos name = 'jointpos_right_hip_roll' joint = 'right_hip_roll' noise = "0" />
@@ -341,7 +352,10 @@
     <jointvel name = 'jointvel_left_hip_roll' joint = 'left_hip_roll' noise = "0" />
     <jointvel name = 'jointvel_left_hip_yaw' joint = 'left_hip_yaw' noise = "0" />
     <jointvel name = 'jointvel_left_knee_pitch' joint = 'left_knee_pitch' noise = "0" />
-    <jointvel name = 'jointvel_left_ankle_pitch' joint = 'left_ankle_pitch' noise = "0" />
+    <jointvel name = 'jointvel_left_ankle_pitch' joint = 'left_ankle_pitch' noise = "0" />\
+    <jointvel name = 'jointvel_left_wrist_pitch' joint = 'left_wrist_pitch' noise = "0" />
+    <jointvel name = 'jointvel_left_wrist_roll' joint = 'left_wrist_roll' noise = "0" />
+
     <jointvel name = 'jointvel_left_ankle_roll' joint = 'left_ankle_roll' noise = "0" />
 
     <jointvel name = 'jointvel_right_hip_pitch' joint = 'right_hip_pitch' noise = "0" />
@@ -353,7 +367,8 @@
   </sensor>
 
 
-  <keyframe>
-    <key name = "home_default" qpos = "0 0 0.61 1 0 0 0 0.48891 0.06213 -0.33853 0.63204 -0.27224 0. -0.48891 -0.06213 0.33853 0.63204 -0.27224 0."/>
-  </keyframe>
+
+<keyframe>
+    <key name="home_default" qpos="0 0 0.61 1 0 0 0 0 0 0 0 0.48891 0.06213 -0.33853 0.63204 -0.27224 0 -0.48891 -0.06213 0.33853 0.63204 -0.27224 0 "/>
+</keyframe> 
 </mujoco>

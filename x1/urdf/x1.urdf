@@ -511,6 +511,7 @@
       effort="0"
       velocity="0" />
   </joint>
+
   <link
     name="left_wrist_pitch">
     <inertial>
@@ -569,7 +570,66 @@
       effort="0"
       velocity="0" />
   </joint>  
+   <!-- =================================================================== -->
+  <!-- ============ 这里是新添加的 left_wrist_roll link 和 joint ========== -->
+  <!-- =================================================================== -->
   
+  <link name="left_wrist_roll_link">
+    <!-- 
+      为了简单起见，这里可以先用一个简单的几何体（如圆柱体）作为 visual 和 collision 模型。
+      惯性参数（mass, inertia）可以先设为较小的值，后续再根据实际模型更新。
+    -->
+    <inertial>
+      <origin xyz="-0.0206623 -0.0314139 -0.00356965" rpy="-0.5218 1.565 1.564" /> <!-- 假设质心在伸缩方向的中间 -->
+    <mass value="0.370899"/>
+    
+    <!-- Inertia tensor at the CoM, aligned with the inertia frame defined by the origin's rpy. -->
+    <!-- This comes from diaginertia in MJCF. -->
+    <inertia ixx="0.000404077" ixy="0.0" ixz="0.0"
+             iyy="0.000356841" iyz="0.0"
+             izz="0.000211598"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0 " />
+      <geometry>
+        <mesh
+          filename="../meshes/left_wrist_roll.STL" />
+      </geometry>
+      <material name="left_wrist_roll_material">
+        <color rgba="1 0.4 0 1" /> <!-- 给它一个灰色 -->
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02" length="0.1" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="left_wrist_roll_joint" type="revolute"> <!-- 注意：类型是 prismatic -->
+    <parent link="left_wrist_pitch" />
+    <child link="left_wrist_roll_link" />
+    <!-- 
+      origin 定义了 wrist_roll_link 的基准位置相对于 elbow_yaw 的位置。
+      这里的 xyz 和 rpy 需要根据你的机器人结构来精确设定。
+      我们先假设它在 elbow_yaw 的某个位置，并且没有初始旋转。
+    -->
+   <origin xyz="0 0 0" rpy="0 1.570796 0"/>    
+    <!-- axis 定义了伸缩的方向，这里我们假设它沿着新连杆的 Z 轴伸缩 -->
+    <axis xyz="1 0 0" />
+      <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="0"
+      velocity="2" />
+    <!-- 
+      limit 定义了伸缩范围。
+      lower="0" upper="0.1" 表示它可以从初始位置伸长 0 到 10 厘米。
+    -->
+    <!--<limit lower="0.0" upper="0.254" effort="30" velocity="0.05" />-->
+  </joint>  
+
   <link
     name="right_shoulder_pitch">
     <inertial>
@@ -921,7 +981,62 @@
       effort="0"
       velocity="0" />
   </joint>
+<!-- =================================================================================== -->
+<!-- ===================  JOINT connecting wrist_pitch to wrist_roll (RIGHT) =================== -->
+<!-- =================================================================================== -->
+
+<joint name="right_wrist_roll_joint" type="revolute">
+  <parent link="right_wrist_pitch"/>
+  <child link="right_wrist_roll_link"/>
   
+  <!-- The pose of the child link's origin relative to the parent link's origin. -->
+  <!-- This is identical to the left side. -->
+  <origin xyz="0 0 0" rpy="0 1.570796 0"/>
+  
+  <!-- Axis of rotation for the joint, defined in the joint's frame. -->
+  <!-- THIS IS THE KEY DIFFERENCE: rotation is around the X-axis. -->
+  <axis xyz="1 0 0"/>
+  
+  <!-- Joint limits. -->
+  <limit lower="-3.14" upper="3.14" effort="10.0" velocity="2.0"/>
+  
+  <!-- Joint dynamics. -->
+  <dynamics damping="1.0" friction="0.0"/>
+</joint>
+
+
+<!-- =================================================================================== -->
+<!-- ===================           LINK for right_wrist_roll           =================== -->
+<!-- =================================================================================== -->
+
+<link name="right_wrist_roll_link">
+  <inertial>
+    <!-- The inertial properties are identical to the left link, as the values in MJCF are the same. -->
+    <origin xyz="-0.0206623 -0.0314139 -0.00356965" rpy="-0.5218 1.565 1.564"/>
+    <mass value="0.370899"/>
+    <inertia ixx="0.000404077" ixy="0.0" ixz="0.0"
+             iyy="0.000356841" iyz="0.0"
+             izz="0.000211598"/>
+  </inertial>
+  
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0 " />
+      <geometry>
+        <mesh
+          filename="../meshes/right_wrist_roll.STL" />
+      </geometry>
+      <material name="right_wrist_roll_material">
+        <color rgba="1 0.4 0 1" /> <!-- 给它一个灰色 -->
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02" length="0.1" />
+      </geometry>
+    </collision>
+</link>
+
   <link
     name="waist_motor_a_link">
     <inertial>
@@ -2973,7 +3088,7 @@
   </link>
   <joint
     name="arm_l_wrist_a_ball_joint"
-    type="revolute">
+    type="prismatic">
     <origin
       xyz="-0.009 -0.02 -0.0199"
       rpy="1.5708 0 0" />
@@ -2982,7 +3097,8 @@
     <child
       link="arm_l_wrist_a_ball" />
     <axis
-      xyz="0 0 0" />
+      xyz="0 -1 0" />
+    <limit lower="0.0" upper="0.254" effort="50" velocity="0.005"/>  
   </joint>
   <link
     name="arm_l_wrist_motor_a_link">
