@@ -2,6 +2,8 @@ import ikpy.chain
 import ikpy.utils.plot as plot_utils # For visualization (optional)
 import numpy as np
 import os
+import time
+from ikpy.link import URDFLink, OriginLink, DHLink
 
 # Define the path to your URDF file
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,9 +31,30 @@ left_arm_link_names = [
     "left_wrist_pitch",
     "left_wrist_pitch_joint"
 ]
+
+left_arm_link_names = [
+    "lumber_pitch",
+    'left_shoulder_pitch_joint', 
+    'left_shoulder_pitch', 
+    'left_shoulder_roll_joint', 
+    'left_shoulder_roll', 
+    'left_shoulder_yaw_joint', 
+    'left_shoulder_yaw', 
+    'left_elbow_pitch_joint', 
+    'left_elbow_pitch', 
+    'left_elbow_yaw_joint', 
+    'left_elbow_yaw', 
+    'left_wrist_pitch_joint', 
+    'left_wrist_pitch'
+]
+
+correct_mask = [False, True, True, True, True, True,False]
+
 try:
     robot_chain = ikpy.chain.Chain.from_urdf_file(urdf_file_path,
     base_elements=left_arm_link_names, # The first link in your desired chain
+    active_links_mask=correct_mask,
+    #last_link_vector=[0, 0.0, 0],
     #last_link_element=left_arm_link_names[-1], # The last link in your desired chain         
     )                                         
 except FileNotFoundError:
@@ -48,11 +71,12 @@ print(f"Robot Name: {robot_chain.name}")
 print("\n--- Links in the chain ---")
 for i, link in enumerate(robot_chain.links):
     is_active = False
-    if i < len(robot_chain.active_links_mask) and robot_chain.active_links_mask[i]:
+    if i< robot_chain.active_links_mask.size and robot_chain.active_links_mask[i]:
         is_active = True
-    link_type = "Fixed/Base"
-    if hasattr(link, 'joint') and hasattr(link.joint, 'type'):
-        link_type = link.joint.type
+    link_type = "fixed"
+    if isinstance(link,URDFLink):
+        link_type = link.joint_type
+
 
     print(f"Link {i}: Name='{link.name}', Type='{link_type}', Active for IK: {is_active}")
 
@@ -99,74 +123,73 @@ initial_joint_positions = [0.0] * len(robot_chain.links)
 # [base_link (fixed), link1 (revolute), link2 (revolute), end_effector_link (revolute)]
 # For our URDF, the active joints are roughly elements 1, 2, 3 of the links list.
 # So, initial_joint_positions[1], initial_joint_positions[2], initial_joint_positions[3] will be used.
+initial_joint_positions[1]=np.deg2rad(45)
+initial_joint_positions[2]=np.deg2rad(45)
+initial_joint_positions[3]=np.deg2rad(45)
+initial_joint_positions[4]=np.deg2rad(45)
+initial_joint_positions[5]=np.deg2rad(45)
 
 print(f"Initial joint configuration (radians, full chain): {initial_joint_positions}")
 
-# --- 5. Compute Inverse Kinematics ---
-print("\n--- Computing IK ---")
-try:
-    # The ik_solution contains angles for ALL links in the chain (including fixed ones, which will be 0 or their fixed value)
-    # in RADIANS.
-    ik_solution_radians = robot_chain.inverse_kinematics(
-        target_position=target_position,
-        target_orientation=target_orientation, # Add this if you have a target orientation
-        # orientation_mode=orientation_mode, # Add this if you have a target orientation
-        initial_position=initial_joint_positions,
-        # Optional parameters:
-        # max_iter=10,
-        # tolerance=1e-5
-    )
-    ik_solution_degrees = np.rad2deg(ik_solution_radians)
+initial_fk = robot_chain.forward_kinematics(initial_joint_positions)
+current_target_xyz = initial_fk[:3, 3]
+current_angles_rad= initial_joint_positions
+print(f"Arm starting at position: {current_target_xyz}  {initial_fk}")
 
-    print("\nIK Solution Found:")
-    print(f"  Joint angles (radians, full chain): {ik_solution_radians}")
-    print(f"  Joint angles (degrees, full chain): {ik_solution_degrees}")
+target_joint_positions = initial_joint_positions.copy()
+target_joint_positions[3]=np.deg2rad(30)
+target_joint_positions[4]=np.deg2rad(30)
+other_fk = robot_chain.forward_kinematics(target_joint_positions)
+other_xyz = other_fk[:3, 3]
+print(f"target arm position: {other_xyz}")
 
-    # Extracting active joint values
-    active_joint_names = []
-    active_joint_values_deg = []
-    for i, link in enumerate(robot_chain.links):
-        if robot_chain.active_links_mask[i]: # Check if the joint is active
-            active_joint_names.append(link.name) # The link associated with the active joint
-            active_joint_values_deg.append(ik_solution_degrees[i])
+active_joint_indices = [i for i, active in enumerate(robot_chain.active_links_mask) if active]
 
-    print("\n  Active Joint Solution (degrees):")
-    for name, val in zip(active_joint_names, active_joint_values_deg):
-        print(f"    Joint for link '{name}': {val:.2f} degrees")
+# 检查每个活动关节
+for i, joint_idx in enumerate(active_joint_indices):
+    link = robot_chain.links[joint_idx]
+    lower_limit, upper_limit = link.bounds
+    angle = initial_joint_positions[i]
+    
+    print(f"Active Joint {i} (Link Index {joint_idx}): Name='{link.name}'")
+    print(f"  - Bounds: ({lower_limit:.4f}, {upper_limit:.4f})")
+    print(f"  - Initial Angle: {angle:.4f}")
+    
+    if not (lower_limit <= angle <= upper_limit):
+        print(f"  - !!! ERROR: Angle is OUTSIDE the defined limits!")
 
-    # --- 6. Verify the solution with Forward Kinematics ---
-    # This computes the end-effector pose given the found joint angles
-    achieved_frame_matrix = robot_chain.forward_kinematics(ik_solution_radians)
-    achieved_position = achieved_frame_matrix[:3, 3]
-    achieved_orientation_matrix = achieved_frame_matrix[:3, :3]
-
-    print("\n--- Verification with Forward Kinematics ---")
-    print(f"  Achieved End-Effector Position: {achieved_position}")
-    print(f"  Position Error (Euclidean distance): {np.linalg.norm(np.array(target_position) - achieved_position):.6f}")
-    # print(f"  Achieved Orientation Matrix:\n{achieved_orientation_matrix}")
-
-    # --- 7. (Optional) Plot the robot ---
-    # Requires matplotlib: pip install matplotlib
+running = True
+# --- 主循环 ---
+while running:
+    # 2. 计算新的目标位置
+    #target_xyz = current_target_xyz + np.array([0, 0.02, -0.02])
+    target_xyz = other_xyz
     try:
-        import matplotlib.pyplot as plt
-        fig, ax = plot_utils.init_3d_figure()
-        robot_chain.plot(ik_solution_radians, ax, target=target_position)
-        ax.set_xlabel("X (m)")
-        ax.set_ylabel("Y (m)")
-        ax.set_zlabel("Z (m)")
-        ax.set_title("IK Solution for x1_robot")
-        # Set axis limits to better view the robot if needed
-        ax.set_xlim([-0.5, 0.5])
-        ax.set_ylim([-0.5, 0.5])
-        ax.set_zlim([0, 0.7])
-        plt.show()
-    except ImportError:
-        print("\nMatplotlib not found. Skipping visualization. Install with 'pip install matplotlib'")
+        print(f"current_angles_rad: {current_angles_rad}")
+        print(f"target_xyz: {target_xyz}")
+        # 3. IK求解
+        # ikpy会找到最接近当前姿态的解
+        # orientation_mode="Z" 是个非常有用的模式，它会尽力保持末端垂直向下，
+        # 只关心位置(X,Y,Z)，大大简化了6-DOF手臂的控制。
+        target_angles_rad = robot_chain.inverse_kinematics(
+            target_position=target_xyz,
+            initial_position=current_angles_rad,
+            #orientation_mode="Z", # 可选 "X", "Y", "Z", "all", "None"
+        )
+        print(f"IK Solution (Joint Angles): {np.rad2deg(target_angles_rad)}")
+        break
+        # 5. 更新状态
+        # 使用IK求解出的角度作为下一次计算的起点
+        current_angles_rad = target_angles_rad
+        # 重新用FK计算当前位置，而不是直接用target_xyz，这样可以防止误差累积
+        current_fk = robot_chain.forward_kinematics(current_angles_rad)
+        current_target_xyz = current_fk[:3, 3]
+
     except Exception as e:
-        print(f"\nError during plotting: {e}")
+        # 如果IK求解失败（例如目标点超出范围），则不移动并打印错误
+        print(f"IK Error: {e}. Target unreachable.")
+        # 回到上一个有效位置
+        target_xyz = current_target_xyz
 
 
-except ikpy.exceptions.InverseKinematicsException as e:
-    print(f"\nIK Error: Could not find a solution. {e}")
-except Exception as e:
-    print(f"\nAn unexpected error occurred: {e}")
+    time.sleep(5) # 控制循环频率，避免发送指令过快

@@ -1,0 +1,35 @@
+{
+  "elements": [
+    "lumber_pitch",
+    "left_shoulder_pitch_joint",
+    "left_shoulder_pitch",
+    "left_shoulder_roll_joint",
+    "left_shoulder_roll",
+    "left_shoulder_yaw_joint",
+    "left_shoulder_yaw",
+    "left_elbow_pitch_joint",
+    "left_elbow_pitch",
+    "left_elbow_yaw_joint",
+    "left_elbow_yaw",
+    "left_wrist_pitch_joint",
+    "left_wrist_pitch"
+  ],
+  "urdf_file": "x1.urdf",
+  "active_links_mask": [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+  ],
+  "last_link_vector": [
+    0,
+    0.0,
+    0
+  ],
+  "name": "chain",
+  "version": "v1"
+}
