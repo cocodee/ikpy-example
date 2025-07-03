@@ -1,0 +1,15 @@
+name: ik_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - pinocchio
+  - hpp-fcl
+  - pip
+  - pip:
+    - eclipse-zenoh
+    - ikpy
+    - meshcat
+    - casadi

@@ -1022,7 +1022,7 @@
   </link>
   <joint
     name="waist_motor_a_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.065 0 -0.0108000000001461"
       rpy="3.14159265358979 0 0" />
@@ -1075,7 +1075,7 @@
   </link>
   <joint
     name="waist_motor_a_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0.0749999999999924 0"
       rpy="3.14159265358979 0 0" />
@@ -1128,7 +1128,7 @@
   </link>
   <joint
     name="waist_motor_b_link_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0.0750000000000303 -0.0708000000000074"
       rpy="3.14159265358979 0 0" />
@@ -1186,7 +1186,7 @@
   </link>
   <joint
     name="waist_motor_b_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.0650000000000492 0 -0.0108000000000005"
       rpy="3.14159265358979 1.5707963267949 0" />
@@ -1239,7 +1239,7 @@
   </link>
   <joint
     name="waist_motor_b_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 -0.0749999999999924 0"
       rpy="0 0 0" />
@@ -1698,7 +1698,7 @@
   </link>
   <joint
     name="leg_l_toe_a_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.0233806454082247 0.00902193211627456 -0.0211500000000038"
       rpy="0 0 0" />
@@ -1751,7 +1751,7 @@
   </link>
   <joint
     name="leg_l_toe_a_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 -0.195 0"
       rpy="0 1.5707963267949 0" />
@@ -1804,7 +1804,7 @@
   </link>
   <joint
     name="leg_l_toe_b_link_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0.0198499999999967 -0.164961932116271 0.0335431621711256"
       rpy="0 -1.5707963267949 0" />
@@ -1862,7 +1862,7 @@
   </link>
   <joint
     name="leg_l_toe_b_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0.0233806454082588 0.00902193211627189 -0.0211500000000081"
       rpy="0 0 0" />
@@ -1915,7 +1915,7 @@
   </link>
   <joint
     name="leg_l_toe_b_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 -0.14 0"
       rpy="0 1.5707963267949 0" />
@@ -2375,7 +2375,7 @@
   </link>
   <joint
     name="leg_r_toe_a_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0.0233806454082594 0.00902193211626567 -0.0211499999999971"
       rpy="0 0 0" />
@@ -2428,7 +2428,7 @@
   </link>
   <joint
     name="leg_r_toe_a_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 -0.195000000000005 0"
       rpy="0 1.5707963267949 0" />
@@ -2481,7 +2481,7 @@
   </link>
   <joint
     name="leg_r_toe_b_link_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.0198500000000051 -0.164961932116276 0.0335431621711194"
       rpy="0 1.5707963267949 0" />
@@ -2539,7 +2539,7 @@
   </link>
   <joint
     name="leg_r_toe_b_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.0233806454082563 0.00902193211627755 -0.0211499999999931"
       rpy="0 0 0" />
@@ -2592,7 +2592,7 @@
   </link>
   <joint
     name="leg_r_toe_b_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 -0.14 0"
       rpy="0 1.5707963267949 0" />
@@ -2645,7 +2645,7 @@
   </link>
   <joint
     name="arm_r_wrist_a_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.009 -0.02 -0.0199"
       rpy="1.5708 0 0" />
@@ -2756,7 +2756,7 @@
   </link>
   <joint
     name="arm_r_wrist_a_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0 0.0132"
       rpy="-1.5708 -0.028438 0" />
@@ -2809,7 +2809,7 @@
   </link>
   <joint
     name="arm_r_wrist_b_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.009 0.02 -0.0199"
       rpy="-1.5708 0 0" />
@@ -2920,7 +2920,7 @@
   </link>
   <joint
     name="arm_r_wrist_b_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0 0.0132"
       rpy="1.5708 -0.028438 0" />
@@ -2973,7 +2973,7 @@
   </link>
   <joint
     name="arm_l_wrist_a_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.009 -0.02 -0.0199"
       rpy="1.5708 0 0" />
@@ -3084,7 +3084,7 @@
   </link>
   <joint
     name="arm_l_wrist_a_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0 0.0132"
       rpy="-1.5708 -0.028438 0" />
@@ -3137,7 +3137,7 @@
   </link>
   <joint
     name="arm_l_wrist_b_ball_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="-0.009 0.02 -0.0199"
       rpy="-1.5708 0 0" />
@@ -3248,7 +3248,7 @@
   </link>
   <joint
     name="arm_l_wrist_b_loop_joint"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0 0 0.0132"
       rpy="1.5708 -0.028438 0" />
