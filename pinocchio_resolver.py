@@ -8,8 +8,9 @@ import logging
 import os
 import zenoh
 from pinocchio import casadi as cpin
+from pinocchio.visualize import MeshcatVisualizer
 from weighted_moving_filter import WeightedMovingFilter # 假设这个工具类存在
-
+import traceback
 # --- Logging Configuration ---
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -53,7 +54,16 @@ class X1_LeftArmIK:
         # Determine which joints to lock by finding the difference.
         joints_to_lock_names = [j for j in all_joint_names if j not in self.active_joints_names]
         log.info(f"Locking {len(joints_to_lock_names)} joints.")
-        
+
+        ee_parent_joint_name = 'left_wrist_pitch_joint' #'left_wrist_pitch_joint'
+        ee_parent_joint_id = self.robot.model.getJointId(ee_parent_joint_name)
+        print(f"Parent joint of end effector: {ee_parent_joint_id}")
+        self.robot.model.addFrame(
+            pin.Frame('L_ee', ee_parent_joint_id,
+                      pin.SE3.Identity(), # No offset from the joint frame for now
+                      pin.FrameType.OP_FRAME)
+        )
+        self.robot.rebuildData()
         # Build the reduced model containing only the active joints.
         self.reduced_robot = self.robot.buildReducedRobot(
             list_of_joints_to_lock=joints_to_lock_names,
@@ -61,21 +71,16 @@ class X1_LeftArmIK:
         )
         log.info(f"Reduced model created with {self.reduced_robot.model.nq} DoF.")
         log.info(f"Active joints in reduced model: {[name for name in self.reduced_robot.model.names if name != 'universe']}")
+        
 
 
         # --- 3. Define the End-Effector (EE) Frame ---
         # We attach a frame to the last joint of the arm (the wrist).
         # This frame is what we will control to the target pose.
-        ee_parent_joint_name = 'left_wrist_pitch_joint'
-        ee_parent_joint_id = self.reduced_robot.model.getJointId(ee_parent_joint_name)
-        self.reduced_robot.model.addFrame(
-            pin.Frame('L_ee', ee_parent_joint_id,
-                      pin.SE3.Identity(), # No offset from the joint frame for now
-                      pin.FrameType.OP_FRAME)
-        )
+
         self.ee_frame_id = self.reduced_robot.model.getFrameId('L_ee')
         
-        self.reduced_robot.data = self.reduced_robot.model.createData()
+        #self.reduced_robot.data = self.reduced_robot.model.createData()
         # --- 4. Setup CasADi for Symbolic Optimization ---
         self.cmodel = cpin.Model(self.reduced_robot.model)
         self.cdata = self.cmodel.createData()
@@ -143,10 +148,10 @@ class X1_LeftArmIK:
         self.vis = None
         if self.Visualization:
             self.vis = MeshcatVisualizer(self.reduced_robot.model, self.reduced_robot.collision_model, self.reduced_robot.visual_model)
-            self.vis.initViewer(open=True)
+            self.vis.initViewer(open=False)
             self.vis.loadViewerModel("pinocchio")
             self.vis.display(self.q_current)
-            self.vis.viewer['L_ee_target'].set_object(mg.Sphere(0.05), mg.MeshLambertMaterial(color=0xff0000, reflectivity=0.8))
+            self.vis.viewer['L_ee_target'].set_object(mg.Sphere(0.005), mg.MeshLambertMaterial(color=0xff0000, reflectivity=0.8))
 
 
     def solve(self, target_pose, q_guess=None):
@@ -192,20 +197,7 @@ class X1_LeftArmIK:
 # === STEP 2: REFACTORED MAIN SCRIPT USING THE NEW SOLVER ===
 # ==============================================================================
 
-# --- Robot and IK Configuration ---
-script_dir = os.path.dirname(os.path.abspath(__file__))
-# IMPORTANT: Make sure the path to the URDF is correct
-urdf_file_path = os.path.join(script_dir, "x1/urdf/x1.urdf") 
 
-# --- Initialize the new IK Solver ---
-try:
-    ik_solver = X1_LeftArmIK(urdf_file_path, visualization=False) # Set to True to see a 3D view
-except Exception as e:
-    log.error("Could not initialize IK solver. Exiting.")
-    log.error(e)
-    exit()
-
-log.info("Successfully initialized Pinocchio+CasADi IK solver.")
 
 # --- Zenoh Configuration ---
 ZENOH_ROUTER_ADDRESS = "tcp/74.48.61.171:7447"
@@ -216,6 +208,22 @@ ZENOH_KEY = "fms/phone_server"
 
 # --- Zenoh Subscriber Callback ---
 def test(position_change):
+    # --- Robot and IK Configuration ---
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+   # IMPORTANT: Make sure the path to the URDF is correct
+    urdf_file_path = os.path.join(script_dir, "x1/urdf/x1.urdf") 
+
+
+
+    log.info("Successfully initialized Pinocchio+CasADi IK solver.")
+    # --- Initialize the new IK Solver ---
+    try:
+        ik_solver = X1_LeftArmIK(urdf_file_path, visualization=True) # Set to True to see a 3D view
+    except Exception as e:
+        log.error("Could not initialize IK solver. Exiting.")
+        log.error(e)
+        traceback.print_exc()
+        exit()
 # --- Global State ---
     # Initial joint configuration (all zeros for the reduced model)
     current_angles_rad = np.zeros(ik_solver.reduced_robot.model.nq)
@@ -238,6 +246,7 @@ def test(position_change):
         # --- Calculate New Target Pose ---
         new_target_position = current_target_position + position_change
         
+        print(f"Received position change: {position_change}, New Target Position: {new_target_position}")
         # Construct the full 4x4 target pose matrix
         target_pose = np.eye(4)
         target_pose[:3, :3] = initial_target_orientation # Keep orientation fixed
@@ -253,10 +262,12 @@ def test(position_change):
         
         # --- Validate and Update State ---
         if np.all(np.isfinite(target_angles_rad)):
+            log.info(f"IK solution result: {target_angles_rad}")
             pass
         else:
             log.warning("IK solution returned non-finite values. Discarding.")
 
+        time.sleep(1000)
         log.info("-" * 20)
 
     except json.JSONDecodeError:
@@ -264,7 +275,96 @@ def test(position_change):
     except Exception as e:
         log.error(f"Error in callback: {e}", exc_info=True)
 
+def run_ik_test():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    urdf_file_path = os.path.join(script_dir, "x1", "urdf", "x1.urdf") 
+
+    try:
+        ik_solver = X1_LeftArmIK(urdf_file_path, visualization=True)
+    except Exception as e:
+        log.error("Could not initialize IK solver. Exiting.", exc_info=True)
+        return
+
+    log.info("Successfully initialized Pinocchio+CasADi IK solver.")
+
+    # --- Persistent State Variables ---
+    # These are now outside the loop/callback, so they retain their values.
+    # We start with the solver's initial state (usually zeros).
+    current_angles_rad = ik_solver.q_current
+    
+    # Calculate initial end-effector pose from the initial joint angles
+    initial_pose = ik_solver.forward_kinematics(current_angles_rad)
+    
+    # The current target position starts at the arm's initial position
+    current_target_position = initial_pose[:3, 3].copy() 
+    
+    # Orientation is kept fixed for stability
+    target_orientation = initial_pose[:3, :3].copy()
+
+    log.info(f"Arm starting at position: {current_target_position}")
+    log.info(f"Arm orientation will be kept fixed to:\n{target_orientation}")    
+    
+    # This function would be your Zenoh callback
+    def process_position_change(position_change):
+        nonlocal current_target_position, current_angles_rad # Declare we are modifying the outer scope variables
+        try:
+            if np.allclose(position_change, [0, 0, 0]):
+                return
+                
+            # --- Calculate New Target Pose ---
+            # Update the target position incrementally
+            current_target_position += np.array(position_change)
+            
+            log.info(f"Received change: {position_change}, New Target: {current_target_position}")
+            
+            target_pose = np.eye(4)
+            target_pose[:3, :3] = target_orientation
+            target_pose[:3, 3] = current_target_position
+            
+            # --- IK Calculation ---
+            start_time = time.time()
+            # Use the solver's last known configuration as the initial guess
+            new_angles_rad = ik_solver.solve(target_pose)
+            log.info(f"IK Time: {time.time() - start_time:.4f} seconds")
+            
+            # --- Validate and Update State ---
+            if np.all(np.isfinite(new_angles_rad)):
+                current_angles_rad = new_angles_rad # Update our state
+                log.info(f"IK solution found: {current_angles_rad}")
+            else:
+                log.warning("IK solution returned non-finite values. Discarding.")
+
+            # <<< FIX 3: Removed time.sleep(1000)
+            log.info("-" * 20)
+
+        except Exception as e:
+            log.error(f"Error in callback: {e}", exc_info=True)
+
+    # --- Simulating a few incoming messages ---
+    log.info("--- STARTING SIMULATION ---")
+    time.sleep(2) # Give viewer time to open
+    
+    while True:
+        for i in range(5):
+            process_position_change([0.0, 0.0, 0.01])
+            time.sleep(1)
+        
+        for i in range(5):
+            process_position_change([0.0, 0.01, 0.0])
+            time.sleep(1)
+        
+        for i in range(5):
+            process_position_change([0.01, 0.0, 0.0])
+            time.sleep(1)
+        
+        for i in range(5):
+            process_position_change([-0.01, -0.01, -0.01])
+            time.sleep(1)
+
+    time.sleep(1000)
+    log.info("--- SIMULATION FINISHED ---")
 # --- Main Execution ---
 if __name__ == "__main__":
-    test([0.0, 0.0, 0.05])
+    #test([0.05, 0.15, 0.10])
+    run_ik_test()
    
