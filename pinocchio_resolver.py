@@ -363,8 +363,137 @@ def run_ik_test():
 
     time.sleep(1000)
     log.info("--- SIMULATION FINISHED ---")
+
+def draw_circle_and_record(ik_solver, center_point, radius, num_points, plane='yz', output_filename="circle_trajectory.json"):
+    """
+    控制机械臂末端执行器绘制一个圆形，并记录每个点的关节角度。
+
+    Args:
+        ik_solver (X1_LeftArmIK): 初始化好的IK求解器实例。
+        center_point (np.array): 圆心的3D坐标 [x, y, z]。
+        radius (float): 圆的半径。
+        num_points (int): 构成圆的点的数量。
+        plane (str): 绘制圆的平面，可选 'xy', 'yz', 'xz'。
+        output_filename (str): 保存关节数据的JSON文件名。
+    """
+    log.info(f"Starting to draw a circle with center {center_point}, radius {radius}, on the {plane} plane.")
+    
+    # 1. 初始化，获取固定的目标姿态（只改变位置，不改变朝向）
+    initial_pose = ik_solver.forward_kinematics(ik_solver.q_current)
+    target_orientation = initial_pose[:3, :3] # 保持初始朝向不变
+    
+    recorded_joint_positions = []
+
+    for j in range(100):
+    # 2. 循环生成圆形轨迹上的每个点并求解
+        for i in range(num_points + 1): # +1 以确保画完一个完整的圆
+            # 计算当前点在圆上的角度
+            theta = 2 * np.pi * i / num_points
+            
+            # 根据选择的平面计算坐标偏移
+            if plane == 'yz':
+                offset = np.array([0, radius * np.cos(theta), radius * np.sin(theta)])
+            elif plane == 'xy':
+                offset = np.array([radius * np.cos(theta), radius * np.sin(theta), 0])
+            elif plane == 'xz':
+                offset = np.array([radius * np.cos(theta), 0, radius * np.sin(theta)])
+            else:
+                log.error(f"Invalid plane: {plane}. Choose from 'xy', 'yz', 'xz'.")
+                return None
+        
+            # 计算目标位置
+            target_position = center_point + offset
+            
+            # 构建完整的4x4目标位姿矩阵
+            target_pose = np.eye(4)
+            target_pose[:3, :3] = target_orientation
+            target_pose[:3, 3] = target_position
+            
+            # 3. 使用IK求解器计算关节角度
+            log.info(f"Step {i}/{num_points}: Target position -> {target_position.round(3)}")
+            solved_q = ik_solver.solve(target_pose)
+            
+            # 4. 记录求解出的关节角度
+            recorded_joint_positions.append(solved_q.tolist()) # tolist()方便JSON序列化
+            
+            # 在可视化中加入短暂延时，使运动看起来更平滑
+            #ime.sleep(0.05)
+        
+    log.info("Circle drawing complete.")
+    
+    # 5. 将记录的数据保存到文件
+    try:
+        data_to_save = {
+            "description": f"Joint trajectory for a circle on the {plane} plane.",
+            "num_points": len(recorded_joint_positions),
+            "joint_names": ik_solver.active_joints_names,
+            "trajectory": recorded_joint_positions
+        }
+        with open(output_filename, 'w') as f:
+            json.dump(data_to_save, f, indent=4)
+        log.info(f"Successfully saved joint trajectory to '{output_filename}'")
+    except Exception as e:
+        log.error(f"Failed to save trajectory to file: {e}")
+
+    return recorded_joint_positions
+
+
+def run_circle_drawing_test():
+    """
+    主函数，用于初始化IK求解器并执行画圆任务。
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    urdf_file_path = os.path.join(script_dir, "x1", "urdf", "x1.urdf")
+    
+    try:
+        # 初始化IK求解器，并开启可视化
+        ik_solver = X1_LeftArmIK(urdf_file_path, visualization=True)
+    except Exception as e:
+        log.error("Could not initialize IK solver. Exiting.", exc_info=True)
+        return
+
+    log.info("Successfully initialized Pinocchio+CasADi IK solver.")
+    time.sleep(2) # 等待可视化窗口加载
+
+    # --- 定义圆的参数 ---
+    # 1. 首先，将机械臂移动到一个合适的“准备”位置
+    #    我们以初始零位为基础，向前、向外、向上移动一点作为圆心
+    initial_pose = ik_solver.forward_kinematics(ik_solver.q_current)
+    ready_position = initial_pose[:3, 3] + np.array([0.25, 0.15, 0.25]) # 向前25cm, 向上15cm
+    
+    # 构建准备位置的位姿
+    ready_pose = np.eye(4)
+    ready_pose[:3,:3] = initial_pose[:3,:3]
+    ready_pose[:3,3] = ready_position
+
+    log.info("Moving to a 'ready' position before starting the circle...")
+    ik_solver.solve(ready_pose)
+    time.sleep(2) # 等待机械臂移动到准备位置
+
+    # 2. 从当前准备位置定义圆心
+    circle_center = ik_solver.forward_kinematics(ik_solver.q_current)[:3, 3]
+    
+    # 3. 定义圆的半径和点数
+    circle_radius = 0.1  # 8厘米半径
+    circle_points = 100   # 100个点来构成圆
+    
+    # 调用画圆函数
+    # 在身体正前方画一个竖直的圆 (在YZ平面上)
+    draw_circle_and_record(
+        ik_solver=ik_solver,
+        center_point=circle_center,
+        radius=circle_radius,
+        num_points=circle_points,
+        plane='yz', # 'yz'平面通常是机器人正前方的竖直平面
+        output_filename="left_arm_circle_trajectory.json"
+    )
+
+    log.info("--- Circle drawing test finished ---")
+    time.sleep(10) # 保持可视化窗口以便观察
+
 # --- Main Execution ---
 if __name__ == "__main__":
     #test([0.05, 0.15, 0.10])
-    run_ik_test()
+    #run_ik_test()
+    run_circle_drawing_test()
    
